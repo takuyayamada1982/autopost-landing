@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SNS投稿の文章作成を自動化するツール</title>
+  <style>
+    :root {
+      /* 背景グラデーション（ログイン画面と同じ系統） */
+      --bg-pink: #ffb7c5;
+      --bg-mint: #d8f4d8;
+      --bg-blue: #b8e2ff;
+
+      /* ブランドカラー */
+      --primary: #0f172a; /* 濃紺 */
+      --accent-grad-start: #c4daff;
+      --accent-grad-end: #fbc2eb;
+
+      /* カード・テキスト */
+      --card: #ffffff;
+      --card-soft: rgba(255, 255, 255, 0.95);
+      --text-main: #0f172a;
+      --text-soft: #6b7280;
+      --border-subtle: rgba(148, 163, 184, 0.35);
+      --radius-xl: 24px;
+      --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      background: radial-gradient(circle at top left, var(--bg-pink) 0, var(--bg-mint) 45%, var(--bg-blue) 100%);
+      color: var(--text-main);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page-wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(16px);
+      background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.9),
+        rgba(255, 255, 255, 0.7)
+      );
+      border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+    }
+
+    .nav-inner {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 0, #ffffff, #b8e2ff 35%, #0f172a 100%);
+      box-shadow: 0 0 26px rgba(184, 226, 255, 0.9);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand-mark::before {
+      content: "";
+      position: absolute;
+      inset: 32%;
+      border-radius: 999px;
+      border: 2px solid rgba(15, 23, 42, 0.2);
+    }
+
+    .brand-text-main {
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      font-size: 15px;
+      color: var(--primary);
+    }
+
+    .brand-text-sub {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .nav-cta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .nav-badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, 0.08);
+      color: #15803d;
+      border: 1px solid rgba(74, 222, 128, 0.45);
+    }
+
+    .btn-primary {
+      border-radius: 999px;
+      padding: 9px 18px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--accent-grad-start), var(--accent-grad-end));
+      color: #111827;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 12px 28px rgba(148, 163, 184, 0.6);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    }
+
+    .btn-primary span {
+      font-size: 15px;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.03);
+      box-shadow: 0 18px 38px rgba(148, 163, 184, 0.75);
+    }
+
+    main {
+      flex: 1;
+    }
+
+    .hero {
+      max-width: 1040px;
+      margin: 24px auto 40px;
+      padding: 32px 20px 40px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 32px;
+      align-items: center;
+      border-radius: 28px;
+      background: radial-gradient(circle at top left,
+          rgba(255, 255, 255, 0.98),
+          rgba(255, 255, 255, 0.95));
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+    }
+
+    @media (max-width: 880px) {
+      .hero {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 24px 18px 32px;
+        margin-top: 16px;
+      }
+    }
+
+    .hero-copy-eyebrow {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: #2563eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(129, 140, 248, 0.35);
+      margin-bottom: 14px;
+    }
+
+    .hero-copy-eyebrow-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+    }
+
+    .hero-title {
+      font-size: clamp(28px, 3.3vw, 36px);
+      font-weight: 750;
+      letter-spacing: 0.03em;
+      line-height: 1.25;
+      margin-bottom: 10px;
+      color: var(--primary);
+    }
+
+    .hero-title span {
+      background: linear-gradient(120deg, #0f172a, #6366f1);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .hero-lede {
+      font-size: 14px;
+      color: var(--text-soft);
+      max-width: 520px;
+      margin-bottom: 18px;
+    }
+
+    .hero-bullets {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: var(--text-soft);
+    }
+
+    .hero-bullet {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+    }
+
+    .hero-bullet-icon {
+      margin-top: 4px;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: rgba(191, 219, 254, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #1d4ed8;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .btn-ghost {
+      border-radius: 999px;
+      padding: 8px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--text-soft);
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-ghost:hover {
+      background: #eff6ff;
+      border-color: rgba(59, 130, 246, 0.6);
+      color: #1f2937;
+      box-shadow: 0 8px 20px rgba(148, 163, 184, 0.4);
+    }
+
+    .hero-note {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .hero-note strong {
+      color: var(--primary);
+    }
+
+    /* Right hero panel */
+    .hero-panel {
+      border-radius: var(--radius-xl);
+      background: radial-gradient(circle at top left,
+          rgba(248, 250, 252, 0.98),
+          rgba(255, 255, 255, 0.96));
+      border: 1px solid rgba(203, 213, 225, 0.9);
+      box-shadow: var(--shadow-soft);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .hero-tag {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: #1f2937;
+    }
+
+    .hero-pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .hero-pill {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      color: var(--text-soft);
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .mini-label {
+      font-size: 10px;
+      color: var(--text-soft);
+      margin-bottom: 4px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .input-row input {
+      flex: 1;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.9);
+      background: #f9fafb;
+      padding: 7px 10px;
+      font-size: 11px;
+      color: var(--text-main);
+    }
+
+    .input-row input::placeholder {
+      color: #9ca3af;
+    }
+
+    .input-row button {
+      border-radius: 999px;
+      border: none;
+      padding: 7px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--accent-grad-start), var(--accent-grad-end));
+      color: #111827;
+      font-weight: 600;
+      box-shadow: 0 10px 26px rgba(148, 163, 184, 0.55);
+    }
+
+    .hero-panel-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 880px) {
+      .hero-panel-main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .card {
+      border-radius: 18px;
+      border: 1px solid rgba(203, 213, 225, 0.9);
+      background: var(--card-soft);
+      padding: 10px;
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .card h4 {
+      font-size: 11px;
+      margin-bottom: 6px;
+      color: var(--primary);
+    }
+
+    .card pre {
+      white-space: pre-wrap;
+      font-family: inherit;
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .sns-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .sns-tab {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-soft);
+    }
+
+    .sns-tab.active {
+      background: rgba(191, 219, 254, 0.6);
+      color: #1d4ed8;
+      border-color: rgba(59, 130, 246, 0.9);
+    }
+
+    .sns-output-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 880px) {
+      .sns-output-row {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .sns-output-card {
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      background: #ffffff;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sns-output-card.insta {
+      border-color: #fecaca;
+      background: rgba(254, 226, 226, 0.4);
+    }
+
+    .sns-output-card.facebook {
+      border-color: #bfdbfe;
+      background: rgba(219, 234, 254, 0.4);
+    }
+
+    .sns-output-card.x {
+      border-color: #e5e7eb;
+      background: rgba(249, 250, 251, 0.9);
+    }
+
+    .sns-output-header {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .sns-textarea {
+      flex: 1;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(255, 255, 255, 0.95);
+      padding: 6px;
+      font-size: 11px;
+      color: var(--text-soft);
+      min-height: 70px;
+      line-height: 1.5;
+    }
+
+    .btn-copy {
+      align-self: flex-start;
+      margin-top: 2px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.9);
+      background: #f9fafb;
+      color: #111827;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .chat-badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(129, 140, 248, 0.8);
+      color: #4f46e5;
+      background: rgba(239, 246, 255, 0.9);
+      margin-bottom: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .chat-line {
+      display: flex;
+      gap: 6px;
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+
+    .chat-avatar {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent-grad-start), var(--accent-grad-end));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: #111827;
+      flex-shrink: 0;
+    }
+
+    .chat-bubble {
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: #f3f4ff;
+      border: 1px solid rgba(191, 219, 254, 0.9);
+      color: var(--text-soft);
+    }
+
+    .hero-panel-footer {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      color: var(--text-soft);
+    }
+
+    .hero-panel-footer span strong {
+      color: var(--primary);
+    }
+
+    .price-pill {
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.8);
+      background: rgba(219, 234, 254, 0.95);
+      color: #1e40af;
+      font-size: 10px;
+    }
+
+    /* Sections */
+    .section {
+      max-width: 1040px;
+      margin: 0 auto 32px;
+      padding: 0 20px;
+    }
+
+    .section > img {
+      width: 100%;
+      border-radius: 20px;
+      margin-bottom: 20px;
+      opacity: 0.9;
+      box-shadow: 0 12px 30px rgba(148, 163, 184, 0.4);
+    }
+
+    .section-header {
+      margin-bottom: 18px;
+    }
+
+    .section-eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #6366f1;
+      margin-bottom: 6px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 650;
+      margin-bottom: 4px;
+      color: var(--primary);
+    }
+
+    .section-lede {
+      font-size: 13px;
+      color: var(--text-soft);
+    }
+
+    .problems-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .problem-card {
+      border-radius: 18px;
+      border: 1px dashed rgba(148, 163, 184, 0.7);
+      background: var(--card-soft);
+      padding: 12px;
+      font-size: 13px;
+    }
+
+    .problem-card h3 {
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: var(--primary);
+    }
+
+    .muted {
+      color: var(--text-soft);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .feature-card {
+      border-radius: 18px;
+      border: 1px solid rgba(191, 219, 254, 0.9);
+      background: radial-gradient(circle at top,
+        rgba(219, 234, 254, 0.45),
+        #ffffff);
+      padding: 14px;
+      font-size: 13px;
+    }
+
+    .feature-label {
+      font-size: 11px;
+      color: #2563eb;
+      margin-bottom: 2px;
+    }
+
+    .feature-card h3 {
+      font-size: 14px;
+      margin-bottom: 4px;
+      color: var(--primary);
+    }
+
+    .feature-list {
+      margin-top: 6px;
+      padding-left: 14px;
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .benefit-card {
+      border-radius: 18px;
+      border: 1px solid rgba(52, 211, 153, 0.6);
+      background: radial-gradient(circle at top left,
+        rgba(187, 247, 208, 0.65),
+        #ffffff);
+      padding: 14px;
+      font-size: 13px;
+    }
+
+    .benefit-card h3 {
+      font-size: 14px;
+      margin-bottom: 4px;
+      color: var(--primary);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .step-card {
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: #ffffff;
+      padding: 12px;
+      font-size: 13px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .step-num {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      font-size: 28px;
+      font-weight: 700;
+      color: rgba(129, 140, 248, 0.35);
+    }
+
+    .plan-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .plan-card {
+      border-radius: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: radial-gradient(circle at top,
+        rgba(219, 234, 254, 0.55),
+        #ffffff);
+      padding: 16px;
+      font-size: 13px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .plan-card.highlight {
+      border-color: rgba(129, 140, 248, 0.95);
+      box-shadow: 0 20px 52px rgba(129, 140, 248, 0.35);
+    }
+
+    .plan-tag {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(129, 140, 248, 0.9);
+      color: #3730a3;
+      background: #e0e7ff;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+
+    .plan-name {
+      font-size: 15px;
+      font-weight: 650;
+      margin-bottom: 2px;
+      color: var(--primary);
+    }
+
+    .plan-price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .plan-price-old {
+      font-size: 12px;
+      color: var(--text-soft);
+      text-decoration: line-through;
+    }
+
+    .plan-price-new {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1d4ed8;
+    }
+
+    .plan-note {
+      font-size: 11px;
+      color: var(--text-soft);
+      margin-bottom: 8px;
+    }
+
+    .plan-features {
+      list-style: none;
+      padding-left: 0;
+      margin-bottom: 10px;
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .plan-features li {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .plan-features span {
+      font-size: 11px;
+    }
+
+    .plan-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(129, 140, 248, 0.9);
+      background: #eef2ff;
+      color: #3730a3;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .faq-item {
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: #ffffff;
+      padding: 12px;
+      font-size: 13px;
+    }
+
+    .faq-item h3 {
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: var(--primary);
+    }
+
+    .cta-final {
+      border-radius: 22px;
+      border: 1px solid rgba(148, 163, 184, 0.9);
+      background: radial-gradient(circle at top,
+        rgba(254, 249, 195, 0.7),
+        #ffffff);
+      padding: 18px;
+      text-align: center;
+      box-shadow: 0 24px 60px rgba(148, 163, 184, 0.45);
+    }
+
+    .cta-final h2 {
+      font-size: 20px;
+      margin-bottom: 6px;
+      color: var(--primary);
+    }
+
+    .cta-final p {
+      font-size: 13px;
+      color: var(--text-soft);
+      margin-bottom: 16px;
+    }
+
+    footer {
+      border-top: 1px solid rgba(148, 163, 184, 0.6);
+      padding: 16px 20px 24px;
+      font-size: 11px;
+      color: var(--text-soft);
+      text-align: center;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      margin-top: 16px;
+    }
+
+    /* カード内のアイコン付き見出し共通 */
+    .card-heading {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    /* 円形ピクトグラムのベース */
+    .icon-circle {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      box-shadow: 0 8px 18px rgba(148, 163, 184, 0.45);
+    }
+
+    /* 悩みカード用アイコン（今の自分） */
+    .icon-problem-1 {
+      background: radial-gradient(circle at 30% 0, #fee2e2, #fecaca);
+      color: #b91c1c;
+    }
+    .icon-problem-2 {
+      background: radial-gradient(circle at 30% 0, #fee2e2, #fed7aa);
+      color: #c05621;
+    }
+    .icon-problem-3 {
+      background: radial-gradient(circle at 30% 0, #fce7f3, #e9d5ff);
+      color: #a21caf;
+    }
+
+    /* ベネフィットカード用アイコン（未来の自分） */
+    .icon-benefit-1 {
+      background: radial-gradient(circle at 30% 0, #bbf7d0, #22c55e);
+      color: #064e3b;
+    }
+    .icon-benefit-2 {
+      background: radial-gradient(circle at 30% 0, #dbeafe, #1d4ed8);
+      color: #1d4ed8;
+    }
+    .icon-benefit-3 {
+      background: radial-gradient(circle at 30% 0, #fef9c3, #facc15);
+      color: #854d0e;
+    }
+
+    /* ステップカード用アイコン */
+    .icon-step {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      background: radial-gradient(circle at 30% 0, #e0f2fe, #c4b5fd);
+      color: #312e81;
+      box-shadow: 0 6px 14px rgba(148, 163, 184, 0.45);
+    }
+
+    /* ステップカード内の見出し行 */
+    .step-heading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    /* Demo動画セクション用 */
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .video-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      box-shadow: 0 10px 30px rgba(148, 163, 184, 0.35);
+      padding: 14px;
+    }
+
+    .video-card h3 {
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: #111827;
+    }
+
+    .video-card p {
+      font-size: 12px;
+      margin-bottom: 8px;
+      color: #6b7280;
+    }
+
+    .video-card video {
+      width: 100%;
+      border-radius: 12px;
+      display: block;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <header>
+      <div class="nav-inner">
+        <div class="brand">
+          <div class="brand-mark"></div>
+          <div>
+            <div class="brand-text-main">AutoPost Studio</div>
+            <div class="brand-text-sub">URLと写真から、SNS文章を一発生成</div>
+          </div>
+        </div>
+        <div class="nav-cta">
+          <div class="nav-badge">今だけ 初期費用 30,000円 キャンペーン中</div>
+          <button class="btn-primary">
+            <span>▶</span>
+            <span>デモ・導入相談はこちら</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Hero -->
+      <section class="hero">
+        <div>
+          <div class="hero-copy-eyebrow">
+            <span class="hero-copy-eyebrow-dot"></span>
+            毎日の投稿作りを、数分に。
+          </div>
+          <h1 class="hero-title">
+            <span>SNS投稿の文章づくり</span>を、
+            URLと写真だけで完了。
+          </h1>
+          <p class="hero-lede">
+            インスタ・Facebook・Xに投稿したいのに、文章を考える時間がない――。
+            特に、やることの多い地方議員やSNS初心者のための、
+            「発信専属ライター」ツールです。URLや写真を入れるだけで、要約・タイトル・投稿文まで自動生成。
+            さらにチャットで、トーン調整も自由自在に行えます。
+          </p>
+          <div class="hero-bullets">
+            <div class="hero-bullet">
+              <div class="hero-bullet-icon">✓</div>
+              <div>議会報告・活動報告を、数分で「伝わる投稿文」に変換</div>
+            </div>
+            <div class="hero-bullet">
+              <div class="hero-bullet-icon">✓</div>
+              <div>URLから要約＆SNS投稿文を自動生成し、コピペでそのまま投稿</div>
+            </div>
+            <div class="hero-bullet">
+              <div class="hero-bullet-icon">✓</div>
+              <div>写真からも、シーンに合った投稿文をAIが提案</div>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <button class="btn-primary">
+              <span>▶</span>
+              <span>キャンペーン価格で相談する</span>
+            </button>
+            <button class="btn-ghost">5分で分かるデモ解説資料を受け取る</button>
+          </div>
+          <p class="hero-note">
+            <strong>対象：</strong>地方議員・首長、自治体職員、地域団体代表、SNS初心者の方 など
+          </p>
+        </div>
+
+        <div class="hero-panel" aria-hidden="true">
+          <div class="hero-panel-header">
+            <div class="hero-tag">ユーザーページ（画面イメージ）</div>
+            <div class="price-pill">初期費用 50,000 → <strong>30,000円</strong></div>
+          </div>
+          <div class="hero-pill-row">
+            <div class="hero-pill">① URLからSNS向け文章を自動生成</div>
+            <div class="hero-pill">② 画像からSNS向け文章を自動生成</div>
+            <div class="hero-pill">③ 通常チャット</div>
+          </div>
+
+          <div class="mini-label">記事やブログのURL</div>
+          <div class="input-row">
+            <input type="text" placeholder="https://example.com/article" />
+            <button>URLから3種類の原稿を作る</button>
+          </div>
+
+          <div class="hero-panel-main">
+            <div class="card">
+              <h4>① URLからSNS向け文章を自動生成</h4>
+              <ul class="feature-list" style="margin-top:4px; font-size:11px;">
+                <li>記事やブログのURLを貼るだけ</li>
+                <li>紹介する立場（自分目線／紹介者目線／中立）を選択</li>
+                <li>X・Instagram・Facebook向けの原稿を3パターン生成</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h4>② 画像からSNS向け文章を自動生成</h4>
+              <p class="muted" style="font-size:11px; margin-bottom:6px;">写真＋一行の補足説明から、SNSごとの文章を自動作成します。</p>
+              <div class="sns-output-row">
+                <div class="sns-output-card insta">
+                  <div class="sns-output-header">Instagram</div>
+                  <div class="sns-textarea" style="min-height:42px;">約200文字＋ハッシュタグの投稿例が表示されます。</div>
+                  <button class="btn-copy">コピー</button>
+                </div>
+                <div class="sns-output-card facebook">
+                  <div class="sns-output-header">Facebook</div>
+                  <div class="sns-textarea" style="min-height:42px;">ストーリー重視・約700文字の投稿例が表示されます。</div>
+                  <button class="btn-copy">コピー</button>
+                </div>
+                <div class="sns-output-card x">
+                  <div class="sns-output-header">X</div>
+                  <div class="sns-textarea" style="min-height:42px;">150文字コンパクトな投稿例が表示されます。</div>
+                  <button class="btn-copy">コピー</button>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <h4>③ 通常チャット</h4>
+              <p class="muted" style="font-size:11px; margin-bottom:4px;">生成された原稿を、チャットで微調整できます。</p>
+              <div class="chat-badge">記載例（そのまま書き換えてOK）</div>
+              <div class="chat-line">
+                <div class="chat-avatar">U</div>
+                <div class="chat-bubble">このテキストを要約して、X向けに150文字で。</div>
+              </div>
+              <div class="chat-line">
+                <div class="chat-avatar">U</div>
+                <div class="chat-bubble">Instagram / Facebook / X それぞれのトーンで整えて。</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-panel-footer">
+            <span>毎回の文章作成を<strong>3〜5分</strong>に短縮</span>
+            <span>対応SNS：X / Instagram / Facebook</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Demo Videos -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-eyebrow">demo</div>
+          <h2 class="section-title">実際の画面操作はこんな感じです</h2>
+          <p class="section-lede">
+            難しい設定は一切ありません。「URLを貼る」「ボタンを押す」「文章をコピーする」の3つだけで、SNS投稿文が完成します。
+          </p>
+        </div>
+
+        <div class="video-grid">
+          <div class="video-card">
+            <h3>STEP 1：URLを貼ってボタンを押すだけ</h3>
+            <p>
+              記事やブログのURLを入力して、「文章をつくる」ボタンをクリックします。SNS初心者の方でも、迷わないシンプルな操作です。
+            </p>
+            <video src="video1.mp4" controls muted playsinline></video>
+          </div>
+
+          <div class="video-card">
+            <h3>STEP 2：数秒でSNS別の投稿文が完成</h3>
+            <p>
+              X・Instagram・Facebook向けの文章が自動生成されます。あとは、気に入った文章をコピーして貼り付けるだけです。
+            </p>
+            <video src="video2.mp4" controls muted playsinline></video>
+          </div>
+        </div>
+      </section>
+
+      <!-- Problems -->
+      <section class="section">
+        <img src="https://source.unsplash.com/800x400/?future,minimal,tech" alt="" />
+        <div class="section-header">
+          <div class="section-eyebrow">problems</div>
+          <h2 class="section-title">こんな悩み、ありませんか？</h2>
+          <p class="section-lede">必要なポイントがひと目で分かるコンパクトな説明にしました。</p>
+        </div>
+        <div class="problems-grid">
+          <div class="problem-card">
+            <div class="card-heading">
+              <div class="icon-circle icon-problem-1">⏱</div>
+              <h3>活動はしているのに、SNSが追いつかない</h3>
+            </div>
+            <p class="muted">現地視察・会議・地域行事…。日々の活動は多いのに、まとめて報告するのが精一杯で、タイムリーな投稿ができない。</p>
+          </div>
+          <div class="problem-card">
+            <div class="card-heading">
+              <div class="icon-circle icon-problem-2">💭</div>
+              <h3>文章に時間がかかりすぎて、しんどい</h3>
+            </div>
+            <p class="muted">言葉選びや構成に悩んでいるうちに30分〜1時間。忙しい日は「今日はいいか」と諦めてしまう。</p>
+          </div>
+          <div class="problem-card">
+            <div class="card-heading">
+              <div class="icon-circle icon-problem-3">❓</div>
+              <h3>なにを書けばいいか、そもそも分からない</h3>
+            </div>
+            <p class="muted">写真は撮ったけれど、どこまで説明するべきか、堅くしすぎても伝わらない気がして、結局下書きのまま止まってしまう。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section class="section">
+        <img src="https://source.unsplash.com/800x400/?future,ai,minimal" alt="" />
+        <div class="section-header">
+          <div class="section-eyebrow">features</div>
+          <h2 class="section-title">このツールでできること</h2>
+          <p class="section-lede">必要なポイントがひと目で分かるコンパクトな説明にしました。</p>
+        </div>
+        <div class="features-grid">
+          <article class="feature-card">
+            <div class="feature-label">特徴 01</div>
+            <h3>URLから、要約・タイトル・SNS投稿文を自動生成</h3>
+            <p class="muted">
+              ニュース記事や議会報告ページなどのURLを1つ貼るだけで、記事の要約・分かりやすいタイトル・X / Instagram / Facebook向けの投稿文を一括で生成します。
+            </p>
+            <ul class="feature-list">
+              <li>専門的な内容も、市民向けに噛み砕いた表現に</li>
+              <li>「要点だけ知りたい」人にも伝わる構成</li>
+              <li>自分のコメントを一言足すだけで完成</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <div class="feature-label">特徴 02</div>
+            <h3>自分が撮った「写真」から、投稿文を自動生成</h3>
+            <p class="muted">
+              活動の様子やイベントの写真をアップロードするだけで、そのシーンに合った投稿文候補をAIが提案。感謝の言葉や次回案内につなげる文章も作れます。
+            </p>
+            <ul class="feature-list">
+              <li>街頭演説・視察・イベントの報告文に</li>
+              <li>写真の雰囲気に合わせたトーンで生成</li>
+              <li>文字数や媒体に合わせた調整も可能</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <div class="feature-label">特徴 03</div>
+            <h3>チャット欄で、トーンや長さを自在に調整</h3>
+            <p class="muted">
+              生成した文章は、そのまま使ってもOK。さらに、ページ内のチャット欄で「もっとやわらかく」「若者向けに」「140文字以内に」など、ChatGPTのように指示して再生成できます。
+            </p>
+            <ul class="feature-list">
+              <li>フォーマル〜カジュアルまで一発でトーン変更</li>
+              <li>媒体ごとの最適な長さに自動で整形</li>
+              <li>「伝わる」文章へブラッシュアップ</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- Benefits -->
+      <section class="section">
+        <img src="https://source.unsplash.com/800x400/?growth,future,minimal" alt="" />
+        <div class="section-header">
+          <div class="section-eyebrow">benefits</div>
+          <h2 class="section-title">導入後に得られる3つの効果</h2>
+          <p class="section-lede">必要なポイントがひと目で分かるコンパクトな説明にしました。</p>
+        </div>
+        <div class="benefits-grid">
+          <div class="benefit-card">
+            <div class="card-heading">
+              <div class="icon-circle icon-benefit-1">⌛</div>
+              <h3>1. 文章作成時間を大幅カット</h3>
+            </div>
+            <p class="muted">
+              毎回30分〜1時間かかっていた投稿文作成が、3〜5分に短縮。隙間時間にさっと下書きを作り、移動中や休憩中に微調整するだけで、発信の頻度が自然と増えます。
+            </p>
+          </div>
+          <div class="benefit-card">
+            <div class="card-heading">
+              <div class="icon-circle icon-benefit-2">📈</div>
+              <h3>2. 継続した情報発信で、信頼感アップ</h3>
+            </div>
+            <p class="muted">
+              「最近見かけないな」という状態から、「いつも活動している様子が伝わってくる」存在へ。定期的な発信が、市民やフォロワーからの信頼感につながります。
+            </p>
+          </div>
+          <div class="benefit-card">
+            <div class="card-heading">
+              <div class="icon-circle icon-benefit-3">😊</div>
+              <h3>3. 文章に自信がない人でも、「伝わる」投稿に</h3>
+            </div>
+            <p class="muted">
+              主語述語が分かりづらい、長くなりすぎる、といった悩みも解消。読み手目線で整理された文章になるので、「ちゃんと伝わっているか不安」というストレスが減ります。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Steps -->
+      <section class="section">
+        <img src="https://source.unsplash.com/800x400/?steps,future,minimal" alt="" />
+        <div class="section-header">
+          <div class="section-eyebrow">how it works</div>
+          <h2 class="section-title">使い方は、かんたん3ステップ</h2>
+          <p class="section-lede">必要なポイントがひと目で分かるコンパクトな説明にしました。</p>
+        </div>
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-num">01</div>
+            <div class="step-heading">
+              <div class="icon-step">📷</div>
+              <h3>URL または 写真を登録</h3>
+            </div>
+            <p class="muted">
+              ニュース記事やブログ、議会報告ページのURLをコピペするか、活動の様子を撮影した写真をアップロードします。
+            </p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">02</div>
+            <div class="step-heading">
+              <div class="icon-step">📝</div>
+              <h3>自動生成された文章を確認</h3>
+            </div>
+            <p class="muted">
+              要約・タイトル・SNS用文章が自動生成されます。X / Instagram / Facebook向けの文章を切り替えて確認できます。
+            </p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">03</div>
+            <div class="step-heading">
+              <div class="icon-step">📲</div>
+              <h3>チャットで微調整し、SNSに投稿</h3>
+            </div>
+            <p class="muted">
+              「もっと短く」「やわらかく」などとチャットで指示して、好みの文章に整えたら、あとはコピペして投稿するだけです。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pricing -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-eyebrow">pricing</div>
+          <h2 class="section-title">料金プランとキャンペーン</h2>
+          <p class="section-lede">必要なポイントがひと目で分かるコンパクトな説明にしました。</p>
+        </div>
+        <div class="plan-grid">
+          <div class="plan-card">
+            <span class="plan-tag">初期導入費用</span>
+            <div class="plan-name">初期設定・レクチャー込み</div>
+            <div class="plan-price-row">
+              <div class="plan-price-old">通常 50,000円</div>
+            </div>
+            <div class="plan-price-row">
+              <div class="plan-price-new">30,000円</div>
+              <span style="font-size:11px; color:#16a34a;">キャンペーン中</span>
+            </div>
+            <p class="plan-note">アカウント発行 / 初期設定 / オンラインでの基本操作レクチャーを含みます。</p>
+          </div>
+
+          <div class="plan-card highlight">
+            <span class="plan-tag">おすすめ</span>
+            <div class="plan-name">ベーシックプラン</div>
+            <div class="plan-price-row">
+              <div class="plan-price-old">通常 月額 6,800円</div>
+            </div>
+            <div class="plan-price-row">
+              <div class="plan-price-new">月額 5,000円</div>
+            </div>
+            <p class="plan-note">個人の地方議員・SNS初心者におすすめのプランです。</p>
+            <ul class="plan-features">
+              <li><span>・URLから要約・タイトル・投稿文を自動生成</span></li>
+              <li><span>・写真からの投稿文生成</span></li>
+              <li><span>・チャットによる文章調整（標準回数）</span></li>
+              <li><span>・メールサポート</span></li>
+            </ul>
+            <button class="plan-cta">ベーシックプランで相談する</button>
+          </div>
+
+          <div class="plan-card">
+            <div class="plan-name">ベーシックPlusプラン</div>
+            <div class="plan-price-row">
+              <div class="plan-price-old">通常 月額 30,000円</div>
+            </div>
+            <div class="plan-price-row">
+              <div class="plan-price-new">月額 19,800円</div>
+            </div>
+            <p class="plan-note">発信量が多い方や、事務所・団体でのご利用に最適なプランです。</p>
+            <ul class="plan-features">
+              <li><span>・ベーシックプランの全機能</span></li>
+              <li><span>・生成回数の大幅拡張</span></li>
+              <li><span>・複数メンバーでの利用を想定した設計</span></li>
+              <li><span>・オンライン個別レクチャー</span></li>
+              <li><span>・優先サポート</span></li>
+            </ul>
+            <button class="plan-cta">ベーシックPlusについて問い合わせる</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-eyebrow">faq</div>
+          <h2 class="section-title">よくあるご質問</h2>
+        </div>
+        <div class="faq-grid">
+          <div class="faq-item">
+            <h3>Q. ITが苦手でも使えますか？</h3>
+            <p class="muted">はい。基本操作は「URLを貼る」「写真をアップする」「文章をコピペする」の3つだけです。導入時にオンラインで画面を一緒に見ながらご説明します。</p>
+          </div>
+          <div class="faq-item">
+            <h3>Q. ChatGPTを直接使うのと何が違いますか？</h3>
+            <p class="muted">本ツールは、SNS投稿に特化している点が大きな違いです。入力欄や出力欄があらかじめ整理されているため、「毎回プロンプトを考える必要がない」「迷わず同じ操作で使える」というメリットがあります。</p>
+          </div>
+          <div class="faq-item">
+            <h3>Q. 地方議員以外でも利用できますか？</h3>
+            <p class="muted">もちろんです。中小企業の経営者、個人事業主、PTA・地域団体など、「発信したいが文章作成に時間をかけられない」方には幅広くご利用いただけます。</p>
+          </div>
+          <div class="faq-item">
+            <h3>Q. 契約前に、画面を見ながら説明を受けられますか？</h3>
+            <p class="muted">はい、オンラインでのデモやご説明も承っています。下記の「デモ・導入相談」ボタンから、お気軽にお問い合わせください。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Final CTA -->
+      <section class="section">
+        <div class="cta-final">
+          <h2>文章のハードルを下げて、「続く発信」をあなたの武器に。</h2>
+          <p>
+            今の時代、「きちんと発信している人」が信頼され、選ばれていきます。
+            URLと写真を入れるだけで、発信の8割が終わっている状態をつくりませんか？
+            忙しいあなたに代わって、AIが「伝わる文章」を下書きします。
+          </p>
+          <button class="btn-primary" style="margin-bottom:8px;">
+            <span>▶</span>
+            <span>デモ・導入の相談をする</span>
+          </button>
+          <div style="font-size:11px; color:#6b7280;">※キャンペーン価格は予告なく終了する場合があります。お早めにご相談ください。</div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      &copy; <!--YEAR--> AutoPost Studio. All rights reserved.
+    </footer>
+  </div>
+</body>
+</html>
